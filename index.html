@@ -3,63 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FB DP VIEWER | PRO BY SHADOW JOKER</title>
+    <title>FB DP VIEWER PRO | BY SHADOW JOKER</title>
     <style>
-        :root { --neon: #00ff41; --bg: #050505; }
+        :root { --neon: #00ff41; --bg: #0a0a0a; }
         body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .container { background: #111; border: 1px solid var(--neon); padding: 30px; border-radius: 15px; width: 90%; max-width: 420px; text-align: center; box-shadow: 0 0 20px rgba(0, 255, 65, 0.2); }
-        h1 { color: var(--neon); font-size: 22px; letter-spacing: 2px; margin-bottom: 20px; }
-        input { width: 100%; padding: 12px; background: #222; border: 1px solid #444; color: white; border-radius: 8px; margin-bottom: 15px; outline: none; box-sizing: border-box; font-size: 16px; }
-        input:focus { border-color: var(--neon); }
-        button { width: 100%; padding: 12px; background: var(--neon); color: black; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; transition: 0.3s; }
-        button:hover { background: #00cc33; transform: scale(1.02); }
-        .result { margin-top: 25px; display: none; animation: fadeIn 0.5s ease; }
-        #dpImg { width: 100%; border-radius: 10px; border: 2px solid var(--neon); margin-bottom: 15px; }
-        .btn-link { display: inline-block; padding: 10px 20px; border: 1px solid var(--neon); color: var(--neon); text-decoration: none; border-radius: 5px; font-size: 14px; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .container { background: #151515; border: 1px solid var(--neon); padding: 30px; border-radius: 15px; width: 90%; max-width: 450px; text-align: center; box-shadow: 0 0 20px rgba(0, 255, 65, 0.2); }
+        h1 { color: var(--neon); text-transform: uppercase; margin-bottom: 20px; font-size: 20px; }
+        input { width: 100%; padding: 15px; background: #222; border: 1px solid #444; color: white; border-radius: 8px; margin-bottom: 15px; outline: none; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; background: var(--neon); color: black; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+        .result { margin-top: 25px; display: none; text-align: left; background: #222; padding: 15px; border-radius: 10px; border: 1px solid #333; }
+        .result img { width: 100%; border-radius: 8px; border: 2px solid var(--neon); margin-bottom: 15px; }
+        .info { color: #aaa; font-size: 14px; margin-bottom: 5px; }
+        .info span { color: var(--neon); font-weight: bold; }
+        .dl-btn { display: block; text-align: center; margin-top: 15px; padding: 10px; background: transparent; border: 1px solid var(--neon); color: var(--neon); text-decoration: none; border-radius: 5px; font-size: 14px; }
+        .dl-btn:hover { background: var(--neon); color: black; }
+        .loader { display: none; color: yellow; margin: 10px 0; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>FB DP VIEWER PRO</h1>
-    <input type="text" id="fbInput" placeholder="Username (e.g. zuck) or Link">
-    <button onclick="fetchDP()">Fetch Full Image</button>
+    <h1>FB DATA EXTRACTOR</h1>
+    <input type="text" id="fbUrl" placeholder="Enter Facebook Profile URL">
+    <button onclick="fetchData()">Get Details</button>
+    <div id="loader" class="loader">তথ্য খোঁজা হচ্ছে...</div>
 
     <div id="resultBox" class="result">
-        <img id="dpImg" src="" alt="Profile Picture">
-        <br>
-        <a id="downloadBtn" class="btn-link" target="_blank">View HD Image</a>
+        <img id="profilePic" src="" alt="Profile Picture">
+        <div class="info">Name: <span id="resName"></span></div>
+        <div class="info">User ID: <span id="resId"></span></div>
+        <a id="downloadBtn" class="dl-btn" target="_blank">Download HD Image</a>
     </div>
 </div>
 
 <script>
-    function fetchDP() {
-        const input = document.getElementById('fbInput').value.trim();
-        let userId = "";
+    async function fetchData() {
+        const url = document.getElementById('fbUrl').value.trim();
+        const loader = document.getElementById('loader');
+        const resultBox = document.getElementById('resultBox');
 
-        if (input.includes("facebook.com") || input.includes("fb.com")) {
-            const parts = input.split('/').filter(Boolean);
-            userId = parts.pop().split('?')[0];
-            if(userId === "profile.php") {
-                const urlParams = new URLSearchParams(input.split('?')[1]);
-                userId = urlParams.get('id');
+        if (!url) return alert("লিংক দিন!");
+
+        loader.style.display = 'block';
+        resultBox.style.display = 'none';
+
+        try {
+            const response = await fetch(`/api/get-details?url=${encodeURIComponent(url)}`);
+            const data = await response.json();
+
+            if (data && data.id) {
+                // আমরা সরাসরি এপিআই থেকে পাওয়া ডাটা ব্যবহার করছি
+                document.getElementById('resName').innerText = data.name || "N/A";
+                document.getElementById('resId').innerText = data.id;
+                
+                // ফেসবুকের বড় ছবির লিংক তৈরি
+                const hdImage = `https://www.facebook.com/${data.id}/picture?type=large&width=1000&height=1000`;
+                
+                document.getElementById('profilePic').src = hdImage;
+                document.getElementById('downloadBtn').href = hdImage;
+                
+                loader.style.display = 'none';
+                resultBox.style.display = 'block';
+            } else {
+                throw new Error();
             }
-        } else {
-            userId = input;
-        }
-
-        if (userId) {
-            // আমাদের Vercel API কে কল করা হচ্ছে
-            const proxyUrl = `/api/get-dp?id=${userId}`;
-            
-            const img = document.getElementById('dpImg');
-            img.src = proxyUrl;
-            
-            document.getElementById('downloadBtn').href = proxyUrl;
-            document.getElementById('resultBox').style.display = 'block';
-        } else {
-            alert("সঠিক তথ্য দিন!");
+        } catch (e) {
+            loader.style.display = 'none';
+            alert("কিছু সমস্যা হয়েছে! প্রোফাইলটি পাবলিক আছে কি না চেক করুন।");
         }
     }
 </script>
